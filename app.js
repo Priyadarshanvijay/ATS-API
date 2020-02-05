@@ -48,16 +48,16 @@ app.post('/addJob', async (req,res) => {
     else console.log(chalk.red.inverse.bold('Job posting not successfull!!'));
     console.log(res.statusCode);
 });
-
+// ({skills_required})=>{
+//     return candidatesBySkill(skills_required);
+// }
 //API to find canddates based on jobs
 app.get('/candidateListing', async (req,res) => {
     let result = true;
     try{
         const jobID = req.body.jobID;
         let listOfCandidates = [];
-        listOfCandidates =  await skillFromJob(jobID, ({skills_required})=>{
-            return candidatesBySkill(skills_required);
-        });
+        listOfCandidates =  await skillFromJob(jobID, candidatesByParam);
         res.setHeader("content-type", "application/json");
         res.send(JSON.stringify(listOfCandidates));
     }
@@ -89,6 +89,24 @@ app.post('/Apply', async (req,res) => {
 });
 
 //API to get candidates based on who have applied for a job
+app.get('/getCandidates', async (req, res) => {
+    let result = true;
+    try{
+        const jobID = req.body.jID;
+        const listOfCandidates = await getCandidatesByApplied(jobID, candidatesByParam);
+        res.setHeader("content-type", "application/json");
+        res.send(JSON.stringify(listOfCandidates));
+    }
+    catch(e){
+        result = false;
+        res.setHeader("content-type", "application/json");
+        res.send('ERROR');
+    }
+    finally{
+        if(result) console.log(chalk.green.inverse('Success!'));
+        else console.log(chalk.inverse.red('FAIL!!'));
+    }
+});
 
 
 start();
@@ -130,16 +148,31 @@ async function findJobsBySkill(skill){
 async function skillFromJob(jobID, callback){
     try{
         let skill = (await client.query("SELECT skills_required FROM job_posting WHERE id = $1", [jobID])).rows[0];
-        return await callback(skill);
+        let {skills_required} = skill;
+        return await callback("skills",skills_required);
     }
     catch(e){
-        return callback("");
+        return callback("skills","");
     }
 }
 
-async function candidatesBySkill(skill){
+async function getCandidatesByApplied(jobID, callback){
     try{
-        let candidates = (await client.query("SELECT * FROM candidate_details NATURAL JOIN personal_details WHERE candidate_details.skills = $1", [skill])).rows;
+        let candIDS = (await client.query("SELECT candidate_id FROM applied_jobs WHERE job_id = $1", [jobID])).rows;
+        let candidates = [];
+        candIDS.forEach(element => {
+            candidates.push(await callback("id",element.candidate_id));
+        });
+        return candidates;
+    }
+    catch(e){
+        return [];
+    }
+}
+
+async function candidatesByParam(param,value){
+    try{
+        let candidates = (await client.query(`SELECT * FROM candidate_details NATURAL JOIN personal_details WHERE candidate_details.${param} = $1`, [value])).rows;
         return candidates;
     }
     catch(e){
