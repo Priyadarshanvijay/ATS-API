@@ -48,6 +48,27 @@ app.post('/addJob', async (req,res) => {
     console.log(res.statusCode);
 });
 
+//API to find canddates based on jobs
+app.get('/candidateListing', async (req,res) => {
+    let result = true;
+    try{
+        const jobID = req.body.jobID;
+        let listOfCandidates = [];
+        listOfCandidates =  await skillFromJob(jobID, ({skills_required})=>{
+            return candidatesBySkill(skills_required);
+        });
+        res.send(JSON.stringify(listOfCandidates));
+    }
+    catch(e){
+        result = false;
+        res.send('ERROR');
+    }
+    finally{
+        if(result) console.log(chalk.green.inverse('Success!'));
+        else console.log(chalk.inverse.red('FAIL!!'));
+    }
+});
+
 start();
 //Functions
 
@@ -80,6 +101,27 @@ async function findJobsBySkill(skill){
         return results.rows;
     }
     catch(e){
+        return [];
+    }
+}
+
+async function skillFromJob(jobID, callback){
+    try{
+        let skill = (await client.query("SELECT skills_required FROM job_posting WHERE id = $1", [jobID])).rows[0];
+        return await callback(skill);
+    }
+    catch(e){
+        return callback("");
+    }
+}
+
+async function candidatesBySkill(skill){
+    try{
+        let candidates = (await client.query("SELECT * FROM candidate_details NATURAL JOIN personal_details WHERE candidate_details.skills = $1", [skill])).rows;
+        return candidates;
+    }
+    catch(e){
+        console.log(e);
         return [];
     }
 }
