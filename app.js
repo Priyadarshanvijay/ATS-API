@@ -18,6 +18,7 @@ app.get('/jobListing', async (req,res) => {
     try{
         const skill = req.body.skill;
         const jobs = await findJobsBySkill(skill);
+        res.setHeader("content-type", "application/json");
         res.send(JSON.stringify(jobs));
     }
     catch(e){
@@ -57,10 +58,12 @@ app.get('/candidateListing', async (req,res) => {
         listOfCandidates =  await skillFromJob(jobID, ({skills_required})=>{
             return candidatesBySkill(skills_required);
         });
+        res.setHeader("content-type", "application/json");
         res.send(JSON.stringify(listOfCandidates));
     }
     catch(e){
         result = false;
+        res.setHeader("content-type", "application/json");
         res.send('ERROR');
     }
     finally{
@@ -68,6 +71,25 @@ app.get('/candidateListing', async (req,res) => {
         else console.log(chalk.inverse.red('FAIL!!'));
     }
 });
+
+//API to apply for a job
+app.post('/Apply', async (req,res) => {
+    let result = true;
+    try{
+        const candidateID = req.body.candID;
+        const jobID = req.body.jID;
+        await createApplication(candidateID, jobID);
+    }
+    catch(e){
+        console.log('Error, ' + e);
+        result = false;
+    }
+    res.setHeader("content-type", "application/json");
+    res.send(result);
+});
+
+//API to get candidates based on who have applied for a job
+
 
 start();
 //Functions
@@ -123,6 +145,15 @@ async function candidatesBySkill(skill){
     catch(e){
         console.log(e);
         return [];
+    }
+}
+
+async function createApplication(candID, jID){
+    try{
+        await client.query('insert into applied_jobs (candidate_id,job_id,date_applied) values ($1,$2,$3);', [candID,jID,new Date()]);
+    }
+    catch(e){
+        console.log(chalk.red.inverse("ERROR!"), e);
     }
 }
 
