@@ -48,9 +48,6 @@ app.post('/addJob', async (req,res) => {
     else console.log(chalk.red.inverse.bold('Job posting not successfull!!'));
     console.log(res.statusCode);
 });
-// ({skills_required})=>{
-//     return candidatesBySkill(skills_required);
-// }
 //API to find canddates based on jobs
 app.get('/candidateListing', async (req,res) => {
     let result = true;
