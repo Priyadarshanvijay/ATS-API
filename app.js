@@ -160,12 +160,18 @@ async function getCandidatesByApplied(jobID, callback){
     try{
         let candIDS = (await client.query("SELECT candidate_id FROM applied_jobs WHERE job_id = $1", [jobID])).rows;
         let candidates = [];
-        candIDS.forEach(element => {
-            candidates.push(await callback("id",element.candidate_id));
-        });
+        // candIDS.forEach(async element => {
+        //     let toPush = await callback("id",element.candidate_id);
+        //     candidates.push(toPush);
+        // });
+        const candIDSize = candIDS.length;
+        for(let curIndex = 0 ; curIndex < candIDSize ; ++curIndex){
+            candidates.push((await callback("id",candIDS[curIndex].candidate_id))[0]);
+        }
         return candidates;
     }
     catch(e){
+        console.log(e);
         return [];
     }
 }
