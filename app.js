@@ -160,6 +160,9 @@ async function getCandidatesByApplied(jobID, callback){
     try{
         let candIDS = (await client.query("SELECT candidate_id FROM applied_jobs WHERE job_id = $1", [jobID])).rows;
         let candidates = [];
+        //-----------------NOTE STARTS-----------------------
+        //The below commented code wasn't working because of forEach function, I had to use for loop because of Async-Await
+        //-----------------NOTE ENDS-----------------------
         // candIDS.forEach(async element => {
         //     let toPush = await callback("id",element.candidate_id);
         //     candidates.push(toPush);
