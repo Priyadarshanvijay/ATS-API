@@ -108,6 +108,26 @@ app.get('/getCandidates', async (req, res) => {
     }
 });
 
+//Add persons -> both candidates and recruiters with the same API?
+app.post('/addPerson', async (req,res) => {
+    try{
+        console.log(chalk.cyanBright('Request received'));
+        const detailsOfPersonObj = req.body;
+        await addPerson(detailsOfPersonObj);
+        res.setHeader("content-type", "application/json");
+        res.status(200).send("User added successfully");
+    }
+    catch(e){
+        await client.query('ROLLBACK');
+        console.log(chalk.red('Request not processed due to the following error : '))
+        console.log(e.message);
+        res.setHeader("content-type", "application/json");
+        res.status(400).send("Cannot add user");
+    }
+    finally{
+        console.log(chalk.cyanBright('Request Served!'));
+    }
+});
 
 start();
 //Functions
@@ -199,4 +219,21 @@ async function createApplication(candID, jID){
     }
 }
 
-app.listen(3000, () => console.log('Server startted on localhost:3000'));
+async function addPerson(personJSON){
+    await client.query('BEGIN');
+    await client.query('INSERT INTO personal_details (id, first_name, last_name, email, gender, password, phone_number) VALUES ($1, $2, $3, $4, $5, $6, $7);', [personJSON.id, personJSON.first_name, personJSON.last_name, personJSON.email, personJSON.gender, personJSON.password, personJSON.phone_number]);
+    if(personJSON["role"] === 'c'){
+        //add to candidate table
+        await client.query('INSERT INTO candidate_details (id, cv, skills, college_of_latest_education, location) VALUES ($1, $2, $3, $4, $5)', [personJSON.id, personJSON.cv, personJSON.skills, personJSON.college_of_latest_education, personJSON.location]);
+    }
+    else if(personJSON["role"] === 'r'){
+        //add to recruiter table
+        await client.query('INSERT INTO recruiter_details (id, company) VALUES ($1, $2)', [personJSON.id, personJSON.company]);
+    }
+    else{
+        throw new Error("Role not defined in request");
+    }
+    await client.query('COMMIT');
+}
+
+app.listen(3000, () => console.log('Server started on localhost:3000'));
