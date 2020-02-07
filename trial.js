@@ -9,4 +9,4 @@ app.get('/', (req,res) => {
     res.status(200).send("Hi, welcome to aws instance");
 });
 
-app.listen(3000, () => console.log('Server started on localhost:3000'));
+app.listen(8080, () => console.log('Server started on localhost:3000'));
