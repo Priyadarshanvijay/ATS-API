@@ -120,6 +120,7 @@ app.post('/addPerson', async (req,res) => {
         await client.query('ROLLBACK');
         console.log(chalk.red('Request not processed due to the following error : '))
         console.log(e.message);
+        console.log(`Received data : ${req.body}`);
         res.setHeader("content-type", "application/json");
         res.status(400).send("Cannot add user");
     }
