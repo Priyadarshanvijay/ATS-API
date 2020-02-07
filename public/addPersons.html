@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/addPersons.css">
+</head>
+<body>
+    <div class="container">
+        <div class="page-title"><h1>Add Person</h1></div>
+        <div class="row">
+            <div class = "col-lg-4 col-md-6 col-sm-12">
+                <div class="form">
+                    <form action="http://127.0.0.1:3000" method="post">
+                        Role: <input type="radio" name="role" value="r" required> Recruiter
+                                <input type="radio" name="role" value="c" required> Candidate<br>
+                        ID: <input type="number" name="id" id="id" required><br>
+                        First Name: <input type="text" name="first_name" id="first_name" required><br>
+                        Last Name: <input type="text" name="last_name" id="last_name"><br>
+                        Email: <input type="email" name="email" id="email" required><br>
+                        Gender: <input type="radio" name="gender" value="male" required> Male
+                                <input type="radio" name="gender" value="female" required> Female
+                                <input type="radio" name="gender" value="others" required> Others<br>
+                        Password: <input type="password" name="password" id="password" required><br>
+                        Mobile Number: <input type="number" name="phone_number" id="phone_number" required><br>
+                        Company : <input type="text" name="company" id="company" required><br>
+                        <input type="submit">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
