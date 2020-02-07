@@ -13,7 +13,7 @@
         <div class="row">
             <div class = "col-lg-4 col-md-6 col-sm-12">
                 <div class="form">
-                    <form action="/addPerson" method="post">
+                    <form>
                         Role: <input type="radio" name="role" value="r" required> Recruiter
                                 <input type="radio" name="role" value="c" required> Candidate<br>
                         ID: <input type="number" name="id" id="id" required><br>
@@ -26,11 +26,25 @@
                         Password: <input type="password" name="password" id="password" required><br>
                         Mobile Number: <input type="number" name="phone_number" id="phone_number" required><br>
                         Company : <input type="text" name="company" id="company" required><br>
-                        <input type="submit">
+                        <input type="submit" onclick="submitToAddPerson()">
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </body>
+<script>
+    function submitToAddPerson(){
+        let formData = JSON.stringify($("#myForm").serializeArray());
+        let settings = {
+            "url": "/addPerson",
+            "method": "POST",
+            "timeout": 0,
+            "data": formData
+        };
+        $.ajax(settings).done(function (response) {
+            console.log(response);
+        });
+    }
+</script>
 </html>
