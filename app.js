@@ -1,9 +1,21 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const {Client} = require('pg');
 const chalk = require('chalk');
 const app = express();
+const morgan = require('morgan');
+const logger = require('./logger');
+const validator = require('express-joi-validation').createValidator({});
+const validation = require('./validation');
 app.use(express.json());
 app.use(express.static('public'));
+
+
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' });
+app.use(morgan('combined', { stream: accessLogStream }))
+const accessDevLogStream = fs.createWriteStream(path.join(__dirname, 'dev.log'), { flags: 'a' });
+app.use(morgan('dev', {stream : accessDevLogStream}));
 
 
 const client = new Client({
@@ -16,7 +28,7 @@ const client = new Client({
 
 
 //API to get job listings based on skill
-app.get('/jobListing', async (req,res) => {
+app.get('/jobListing', validator.body(validation.jobListingPost) ,async (req,res) => {
     try{
         const skill = req.body.skill;
         const jobs = await findJobsBySkill(skill);
@@ -24,13 +36,13 @@ app.get('/jobListing', async (req,res) => {
         res.send(JSON.stringify(jobs));
     }
     catch(e){
+        console.log(`Error occoured : ${e}`);
         res.send('error');
-        // console.log(`Error occoured : ${e}`);
     }
 });
 
 //API to add job posting
-app.post('/addJob', async (req,res) => {
+app.post('/addJob', validator.body(validation.addJobPOST), async (req,res) => {
     let result = {};
     try{
         console.log(chalk.inverse("Request to add a job posting received!"));
@@ -40,7 +52,8 @@ app.post('/addJob', async (req,res) => {
     }
     catch(e){
         result.success = false;
-        console.log(e);
+        console.log(e.message);
+        res.status(409);
     }
     finally{
         res.setHeader("content-type", "application/json");
@@ -50,8 +63,25 @@ app.post('/addJob', async (req,res) => {
     else console.log(chalk.red.inverse.bold('Job posting not successfull!!'));
     console.log(res.statusCode);
 });
-//API to find canddates based on jobs
-app.get('/candidateListing', async (req,res) => {
+
+//API to change job posting
+app.patch('/addJob', validator.body(validation.addJobPatch), async (req,res) => {
+    try{
+        const reqJSON = req.body;
+        await alterJob(reqJSON.id, reqJSON.param, reqJSON.paramValues);
+        res.status(200);
+    }
+    catch(e){
+        console.log(e.message);
+        res.status(400);
+    }
+    finally{
+        res.send();
+    }
+});
+
+//API to find candidates based on jobs
+app.get('/candidateListing', validator.body(validation.getCandidateListing) ,async (req,res) => {
     let result = true;
     try{
         const jobID = req.body.jobID;
@@ -72,7 +102,7 @@ app.get('/candidateListing', async (req,res) => {
 });
 
 //API to apply for a job
-app.post('/Apply', async (req,res) => {
+app.post('/Apply', validator.body(validation.applyForJob) , async (req,res) => {
     let result = true;
     try{
         const candidateID = req.body.candID;
@@ -146,77 +176,45 @@ async function connect() {
 }
 
 async function createJob(jobJSON){
-    try {
-        await client.query("insert into job_posting (id, job_title, job_description, company, annual_salary_ctc, is_open, vacant_position, skills_required) values ($1,$2,$3,$4,$5,$6,$7,$8);", [jobJSON.id, jobJSON.job_title, jobJSON.job_description, jobJSON.company, jobJSON.annual_salary_ctc, jobJSON.is_open, jobJSON.vacant_position, jobJSON.skills_required]);
-        return true
-        }
-        catch(e){
-            return false;
-        }
+    await client.query("insert into job_posting (id, job_title, job_description, company, annual_salary_ctc, is_open, vacant_position, skills_required) values ($1,$2,$3,$4,$5,$6,$7,$8);", [jobJSON.id, jobJSON.job_title, jobJSON.job_description, jobJSON.company, jobJSON.annual_salary_ctc, jobJSON.is_open, jobJSON.vacant_position, jobJSON.skills_required]);
+    return true;
 }
 
 async function findJobsBySkill(skill){
-    try{
-        const results = await client.query("select * from job_posting where skills_required = $1", [skill]);
-        return results.rows;
-    }
-    catch(e){
-        return [];
-    }
+    const results = await client.query("select * from job_posting where skills_required = $1", [skill]);
+    return results.rows;
 }
 
 async function skillFromJob(jobID, callback){
-    try{
-        let skill = (await client.query("SELECT skills_required FROM job_posting WHERE id = $1", [jobID])).rows[0];
-        let {skills_required} = skill;
-        return await callback("skills",skills_required);
-    }
-    catch(e){
-        return callback("skills","");
-    }
+    let skill = (await client.query("SELECT skills_required FROM job_posting WHERE id = $1", [jobID])).rows[0];
+    let {skills_required} = skill;
+    return await callback("skills",skills_required);
 }
 
 async function getCandidatesByApplied(jobID, callback){
-    try{
-        let candIDS = (await client.query("SELECT candidate_id FROM applied_jobs WHERE job_id = $1", [jobID])).rows;
-        let candidates = [];
-        //-----------------NOTE STARTS-----------------------
-        //The below commented code wasn't working because of forEach function, I had to use for loop because of Async-Await
-        //-----------------NOTE ENDS-----------------------
-        // candIDS.forEach(async element => {
-        //     let toPush = await callback("id",element.candidate_id);
-        //     candidates.push(toPush);
-        // });
-        const candIDSize = candIDS.length;
-        for(let curIndex = 0 ; curIndex < candIDSize ; ++curIndex){
-            candidates.push((await callback("id",candIDS[curIndex].candidate_id))[0]);
-        }
-        return candidates;
+    let candIDS = (await client.query("SELECT candidate_id FROM applied_jobs WHERE job_id = $1", [jobID])).rows;
+    let candidates = [];
+    //-----------------NOTE STARTS-----------------------
+    //The below commented code wasn't working because of forEach function, I had to use for loop because of Async-Await
+    //-----------------NOTE ENDS-----------------------
+    // candIDS.forEach(async element => {
+    //     let toPush = await callback("id",element.candidate_id);
+    //     candidates.push(toPush);
+    // });
+    const candIDSize = candIDS.length;
+    for(let curIndex = 0 ; curIndex < candIDSize ; ++curIndex){
+        candidates.push((await callback("id",candIDS[curIndex].candidate_id))[0]);
     }
-    catch(e){
-        console.log(e);
-        return [];
-    }
+    return candidates;
 }
 
 async function candidatesByParam(param,value){
-    try{
-        let candidates = (await client.query(`SELECT * FROM candidate_details NATURAL JOIN personal_details WHERE candidate_details.${param} = $1`, [value])).rows;
-        return candidates;
-    }
-    catch(e){
-        console.log(e);
-        return [];
-    }
+    let candidates = (await client.query(`SELECT * FROM candidate_details NATURAL JOIN personal_details WHERE candidate_details.${param} = $1`, [value])).rows;
+    return candidates;
 }
 
 async function createApplication(candID, jID){
-    try{
-        await client.query('insert into applied_jobs (candidate_id,job_id,date_applied) values ($1,$2,$3);', [candID,jID,new Date()]);
-    }
-    catch(e){
-        console.log(chalk.red.inverse("ERROR!"), e);
-    }
+    await client.query('insert into applied_jobs (candidate_id,job_id,date_applied) values ($1,$2,$3);', [candID,jID,new Date()]);
 }
 
 async function addPerson(personJSON){
@@ -236,4 +234,10 @@ async function addPerson(personJSON){
     await client.query('COMMIT');
 }
 
-app.listen(3000, () => console.log('Server started on localhost:3000'));
+async function alterJob(id,paramArray, paramValues){
+    for(let i = 0 ; i < paramArray.length ; ++i){
+        await client.query(`UPDATE job_posting SET ${paramArray[i]} = $1 WHERE id = $2`, [paramValues[i], id]);
+    }
+}
+
+app.listen(3000, () => logger.info('Server started on localhost:3000'));
