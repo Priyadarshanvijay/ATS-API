@@ -118,7 +118,7 @@ app.post('/Apply', validator.body(validation.applyForJob) , async (req,res) => {
 });
 
 //API to get candidates based on who have applied for a job
-app.get('/getCandidates', async (req, res) => {
+app.get('/getCandidates', validator.body(validation.getCandidateListing), async (req, res) => {
     let result = true;
     try{
         const jobID = req.body.jID;
