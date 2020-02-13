@@ -41,3 +41,5 @@
 ::1 - - [10/Feb/2020:09:20:22 +0000] "PATCH /addJob HTTP/1.1" 400 - "-" "PostmanRuntime/7.22.0"
 ::1 - - [10/Feb/2020:09:20:45 +0000] "PATCH /addJob HTTP/1.1" 200 - "-" "PostmanRuntime/7.22.0"
 ::1 - - [10/Feb/2020:09:31:32 +0000] "PATCH /addJob HTTP/1.1" 400 - "-" "PostmanRuntime/7.22.0"
+::1 - - [11/Feb/2020:05:08:12 +0000] "PATCH /addJob HTTP/1.1" 200 - "-" "PostmanRuntime/7.22.0"
+::1 - - [11/Feb/2020:05:08:23 +0000] "GET /candidateListing HTTP/1.1" 200 527 "-" "PostmanRuntime/7.22.0"

@@ -39,3 +39,5 @@
 [0mPATCH /addJob [33m400 [0m0.484 ms - -[0m
 [0mPATCH /addJob [32m200 [0m2.842 ms - -[0m
 [0mPATCH /addJob [33m400 [0m0.330 ms - -[0m
+[0mPATCH /addJob [32m200 [0m12.107 ms - -[0m
+[0mGET /candidateListing [32m200 [0m11.537 ms - 527[0m
